@@ -1,48 +1,43 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.express as px
 
-st.set_page_config(page_title="Phase Behavior Modeling", layout="centered")
+# Настройки страницы
+st.set_page_config(page_title="Z-фактор Визуализация", layout="wide")
 
 # Заголовок
-st.title("📈 Моделирование фазового поведения (Z-фактор)")
+st.title("📊 Визуализация фазового поведения Z = f(Pressure, Temperature)")
+st.markdown("Данные загружены из Excel-файла `Z_values_table.xlsx`")
 
-# Загрузка Excel-файла
-uploaded_file = st.file_uploader("Загрузите файл Excel с таблицей Z(P,T)", type=["xlsx"])
+# Загрузка данных
+try:
+    df = pd.read_excel("Z_values_table.xlsx")
+    st.success("✅ Файл успешно загружен!")
+except Exception as e:
+    st.error(f"❌ Ошибка загрузки Excel: {e}")
+    st.stop()
 
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
+# Отображение таблицы
+st.subheader("📋 Таблица исходных данных")
+st.dataframe(df)
 
-    st.success("✅ Файл загружен!")
+# Проверка нужных колонок
+if all(col in df.columns for col in ['Pressure', 'Temperature', 'Z']):
+    # 3D-график
+    st.subheader("📈 3D-график: Z = f(Pressure, Temperature)")
+    fig3d = px.scatter_3d(df, x='Pressure', y='Temperature', z='Z',
+                          color='Z',
+                          title="3D Z-фактор",
+                          labels={'Pressure': 'Pressure', 'Temperature': 'Temperature', 'Z': 'Z-factor'})
+    st.plotly_chart(fig3d, use_container_width=True)
 
-    # Отображение таблицы
-    st.subheader("📋 Загруженные данные")
-    st.dataframe(df)
-
-    # Проверим наличие нужных столбцов
-    if all(col in df.columns for col in ["Pressure", "Temperature", "Z"]):
-        st.subheader("🌐 3D график Z = f(P, T)")
-
-        fig = go.Figure(data=[go.Surface(
-            x=df["Pressure"],
-            y=df["Temperature"],
-            z=df["Z"],
-            colorscale="Viridis"
-        )])
-
-        fig.update_layout(
-            scene=dict(
-                xaxis_title='Pressure (atm)',
-                yaxis_title='Temperature (K)',
-                zaxis_title='Z-factor'
-            ),
-            height=700
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
-    else:
-        st.warning("❗ В файле должны быть столбцы: Pressure, Temperature, Z")
+    # Тепловая карта (2D)
+    st.subheader("🌡️ Тепловая карта: Z = f(Pressure, Temperature)")
+    fig2d = px.density_heatmap(df, x='Pressure', y='Temperature', z='Z',
+                               title="Heatmap: Z-фактор",
+                               nbinsx=20, nbinsy=20,
+                               color_continuous_scale="Viridis")
+    st.plotly_chart(fig2d, use_container_width=True)
 
 else:
-    st.info("📂 Пожалуйста, загрузите Excel-файл")
+    st.error("❗ В Excel-файле должны быть колонки: Pressure, Temperature, Z")
