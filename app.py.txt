@@ -1,0 +1,48 @@
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+
+st.set_page_config(page_title="Phase Behavior Modeling", layout="centered")
+
+# Заголовок
+st.title("📈 Моделирование фазового поведения (Z-фактор)")
+
+# Загрузка Excel-файла
+uploaded_file = st.file_uploader("Загрузите файл Excel с таблицей Z(P,T)", type=["xlsx"])
+
+if uploaded_file:
+    df = pd.read_excel(uploaded_file)
+
+    st.success("✅ Файл загружен!")
+
+    # Отображение таблицы
+    st.subheader("📋 Загруженные данные")
+    st.dataframe(df)
+
+    # Проверим наличие нужных столбцов
+    if all(col in df.columns for col in ["Pressure", "Temperature", "Z"]):
+        st.subheader("🌐 3D график Z = f(P, T)")
+
+        fig = go.Figure(data=[go.Surface(
+            x=df["Pressure"],
+            y=df["Temperature"],
+            z=df["Z"],
+            colorscale="Viridis"
+        )])
+
+        fig.update_layout(
+            scene=dict(
+                xaxis_title='Pressure (atm)',
+                yaxis_title='Temperature (K)',
+                zaxis_title='Z-factor'
+            ),
+            height=700
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    else:
+        st.warning("❗ В файле должны быть столбцы: Pressure, Temperature, Z")
+
+else:
+    st.info("📂 Пожалуйста, загрузите Excel-файл")
